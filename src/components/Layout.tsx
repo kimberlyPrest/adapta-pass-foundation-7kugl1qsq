@@ -1,14 +1,17 @@
 import { Suspense, useMemo } from 'react'
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { LoadingScreen } from './LoadingScreen'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { LogOut } from 'lucide-react'
 
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
   const navLinks = useMemo(() => {
     const path = location.pathname
@@ -52,6 +55,11 @@ export default function Layout() {
     '/primeiro-acesso',
   ].includes(location.pathname)
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   if (isAuthPage) {
     return (
       <ErrorBoundary>
@@ -64,31 +72,51 @@ export default function Layout() {
     )
   }
 
+  // Get user initials for fallback
+  const initials =
+    user?.nome
+      ?.split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'U'
+
   return (
     <ErrorBoundary>
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <header className="sticky top-0 z-50 h-16 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border/40">
           <div className="flex h-full items-center justify-between px-6">
             <Link
-              to="/dev-preview"
-              className="flex items-center gap-1 font-display text-2xl font-bold"
+              to={user ? `/${user.perfil.split('_')[0]}` : '/'}
+              className="flex items-center gap-1 font-display text-2xl font-bold transition-transform hover:scale-[1.02]"
             >
               <span className="text-secondary">ADAPTA</span>
               <span className="text-destructive">PASS</span>
             </Link>
 
             <div className="flex items-center gap-4">
+              {user && (
+                <div className="hidden md:flex flex-col items-end mr-2">
+                  <span className="text-sm font-medium leading-none">{user.nome}</span>
+                  <span className="text-xs text-muted-foreground mt-1 capitalize">
+                    {user.perfil.replace('_', ' ')}
+                  </span>
+                </div>
+              )}
               <Avatar className="h-9 w-9 border border-border">
-                <AvatarFallback className="bg-muted text-muted-foreground font-medium">
-                  JD
+                <AvatarImage src={user?.avatar_url} alt={user?.nome} />
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <Button
                 variant="ghost"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => navigate('/login')}
+                size="icon"
+                className="text-muted-foreground hover:text-destructive transition-colors ml-1"
+                onClick={handleLogout}
+                title="Sair"
               >
-                Sair
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>

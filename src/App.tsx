@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import NotFound from './pages/NotFound'
 
@@ -40,48 +42,61 @@ const CEOClienteDetalhes = lazy(() => import('./pages/ceo/ClienteDetalhes'))
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route element={<Layout />}>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/magic-link-confirm" element={<MagicLinkConfirm />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/magic-link-confirm" element={<MagicLinkConfirm />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
-          <Route path="/dev-preview" element={<DevPreview />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-          <Route path="/consultor" element={<ConsultorDashboard />} />
-          <Route path="/consultor/clientes" element={<ConsultorClientes />} />
-          <Route path="/consultor/clientes/:id" element={<ConsultorClienteDetalhes />} />
-          <Route path="/consultor/clientes/:id/dmo" element={<ConsultorClienteDMO />} />
+            {/* Protected Routes Wrapper */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <Outlet />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dev-preview" element={<DevPreview />} />
 
-          <Route path="/gestor" element={<GestorDashboard />} />
-          <Route path="/gestor/areas" element={<GestorAreas />} />
-          <Route path="/gestor/dmo" element={<GestorDMO />} />
-          <Route path="/gestor/dmo/resultado" element={<GestorDMOResultado />} />
-          <Route path="/gestor/tarefas" element={<GestorTarefas />} />
-          <Route path="/gestor/overdelivery" element={<GestorOverdelivery />} />
+              <Route path="/consultor" element={<ConsultorDashboard />} />
+              <Route path="/consultor/clientes" element={<ConsultorClientes />} />
+              <Route path="/consultor/clientes/:id" element={<ConsultorClienteDetalhes />} />
+              <Route path="/consultor/clientes/:id/dmo" element={<ConsultorClienteDMO />} />
 
-          <Route path="/colaborador" element={<ColaboradorDashboard />} />
-          <Route path="/colaborador/processos" element={<ColaboradorProcessos />} />
-          <Route path="/colaborador/processos/novo" element={<ColaboradorProcessoNovo />} />
+              <Route path="/gestor" element={<GestorDashboard />} />
+              <Route path="/gestor/areas" element={<GestorAreas />} />
+              <Route path="/gestor/dmo" element={<GestorDMO />} />
+              <Route path="/gestor/dmo/resultado" element={<GestorDMOResultado />} />
+              <Route path="/gestor/tarefas" element={<GestorTarefas />} />
+              <Route path="/gestor/overdelivery" element={<GestorOverdelivery />} />
 
-          <Route path="/cs/pipeline" element={<CSPipeline />} />
-          <Route path="/cs/clientes/:id" element={<CSClienteDetalhes />} />
-          <Route path="/cs-lead" element={<CSLead />} />
+              <Route path="/colaborador" element={<ColaboradorDashboard />} />
+              <Route path="/colaborador/processos" element={<ColaboradorProcessos />} />
+              <Route path="/colaborador/processos/novo" element={<ColaboradorProcessoNovo />} />
 
-          <Route path="/head" element={<HeadDashboard />} />
-          <Route path="/head/clientes/:id" element={<HeadClienteDetalhes />} />
+              <Route path="/cs/pipeline" element={<CSPipeline />} />
+              <Route path="/cs/clientes/:id" element={<CSClienteDetalhes />} />
+              <Route path="/cs-lead" element={<CSLead />} />
 
-          <Route path="/ceo" element={<CEODashboard />} />
-          <Route path="/ceo/clientes/:id" element={<CEOClienteDetalhes />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+              <Route path="/head" element={<HeadDashboard />} />
+              <Route path="/head/clientes/:id" element={<HeadClienteDetalhes />} />
+
+              <Route path="/ceo" element={<CEODashboard />} />
+              <Route path="/ceo/clientes/:id" element={<CEOClienteDetalhes />} />
+            </Route>
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 
