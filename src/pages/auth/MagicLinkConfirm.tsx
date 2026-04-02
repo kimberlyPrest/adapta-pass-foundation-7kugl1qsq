@@ -7,12 +7,14 @@ export default function MagicLinkConfirm() {
     <div className="flex h-screen w-full items-center justify-center p-4">
       <Card className="w-full max-w-md text-center shadow-elevation">
         <CardHeader>
-          <CardTitle className="font-display text-2xl">Link Confirmado</CardTitle>
-          <CardDescription>Sua autenticação foi realizada com sucesso.</CardDescription>
+          <CardTitle className="font-display text-2xl">Link enviado!</CardTitle>
+          <CardDescription>
+            Verifique sua caixa de entrada e clique no link para acessar a plataforma.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild className="w-full">
-            <Link to="/dev-preview">Ir para o Dashboard</Link>
+            <Link to="/login">Voltar para login</Link>
           </Button>
         </CardContent>
       </Card>

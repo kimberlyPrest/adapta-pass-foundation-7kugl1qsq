@@ -55,7 +55,7 @@ export default function PrimeiroAcesso() {
 
       <Card className="w-full max-w-md shadow-elevation animate-fade-in-up border-border/40">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="font-display text-2xl">Bem-vindo(a)!</CardTitle>
+          <CardTitle className="font-display text-2xl">Bem-vindo ao Adapta Pass</CardTitle>
           <CardDescription>Configure seu perfil para acessar a plataforma.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,7 +80,7 @@ export default function PrimeiroAcesso() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Criar Senha</Label>
+              <Label htmlFor="password">Defina sua senha</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -109,7 +109,7 @@ export default function PrimeiroAcesso() {
               disabled={!isValid || isLoading}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Criar Conta
+              Criar minha conta
             </Button>
 
             <div className="text-center pt-2">

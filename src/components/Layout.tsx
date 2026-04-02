@@ -94,11 +94,11 @@ export default function Layout() {
             {isAuthenticated ? (
               <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             ) : (
               <Button variant="default" size="sm" onClick={() => navigate('/login')}>
-                Sign In
+                Entrar
               </Button>
             )}
           </div>

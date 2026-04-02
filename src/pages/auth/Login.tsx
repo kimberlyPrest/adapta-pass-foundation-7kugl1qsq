@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,18 +21,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { toast } from 'sonner'
 import logoImg from '@/assets/adapta-pass-logo-white-5b4d9-crdoq5rj-cd8ab.png'
-
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-})
-
-type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function Login() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const [isMagicLinkMode, setIsMagicLinkMode] = useState(false)
 
   useEffect(() => {
     const root = document.documentElement
@@ -42,6 +37,17 @@ export default function Login() {
     }
   }, [])
 
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().min(1, 'Informe seu e-mail').email('E-mail inválido'),
+        password: isMagicLinkMode ? z.string().optional() : z.string().min(1, 'Informe sua senha'),
+      }),
+    [isMagicLinkMode],
+  )
+
+  type LoginFormValues = z.infer<typeof loginSchema>
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -50,14 +56,32 @@ export default function Login() {
     },
   })
 
+  useEffect(() => {
+    form.clearErrors('password')
+  }, [isMagicLinkMode, form])
+
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
-    // Simulate authentication API call logic
+
+    if (isMagicLinkMode) {
+      setTimeout(() => {
+        setIsLoading(false)
+        navigate('/magic-link-confirm')
+      }, 1000)
+      return
+    }
+
     setTimeout(() => {
       setIsLoading(false)
       if (data.email && data.password) {
+        if (data.email === 'erro@teste.com') {
+          toast.error('E-mail ou senha incorretos')
+          return
+        }
         localStorage.setItem('isAuthenticated', 'true')
-        navigate('/')
+        navigate('/dev-preview')
+      } else {
+        toast.error('E-mail ou senha incorretos')
       }
     }, 1000)
   }
@@ -71,8 +95,12 @@ export default function Login() {
 
         <Card className="border-border shadow-lg bg-card">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription>Enter your email and password to sign in</CardDescription>
+            <CardTitle className="text-2xl font-bold">Bem-vindo de volta</CardTitle>
+            <CardDescription>
+              {isMagicLinkMode
+                ? 'Digite seu e-mail para receber um link de acesso'
+                : 'Insira seu e-mail e senha para entrar'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -82,10 +110,10 @@ export default function Login() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>E-mail</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="m@example.com"
+                          placeholder="m@exemplo.com"
                           type="email"
                           disabled={isLoading}
                           {...field}
@@ -95,40 +123,60 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel>Password</FormLabel>
-                        <Button variant="link" className="p-0 h-auto text-xs" type="button">
-                          Forgot password?
-                        </Button>
-                      </div>
-                      <FormControl>
-                        <Input
-                          placeholder="••••••••"
-                          type="password"
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!isMagicLinkMode && (
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Senha</FormLabel>
+                          <Button variant="link" asChild className="p-0 h-auto text-xs">
+                            <Link to="/reset-password">Esqueci minha senha</Link>
+                          </Button>
+                        </div>
+                        <FormControl>
+                          <Input
+                            placeholder="••••••••"
+                            type="password"
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <Button type="submit" className="w-full mt-6" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                  {isLoading
+                    ? isMagicLinkMode
+                      ? 'Enviando...'
+                      : 'Entrando...'
+                    : isMagicLinkMode
+                      ? 'Enviar link mágico'
+                      : 'Entrar'}
                 </Button>
               </form>
             </Form>
+
+            <div className="mt-4 text-center">
+              <Button
+                variant="ghost"
+                className="text-sm text-muted-foreground w-full"
+                onClick={() => setIsMagicLinkMode(!isMagicLinkMode)}
+                disabled={isLoading}
+                type="button"
+              >
+                {isMagicLinkMode ? 'Voltar para login com senha' : 'Entrar com link mágico'}
+              </Button>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center border-t p-4">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Button variant="link" className="p-0 h-auto font-medium" type="button">
-                Sign up
+              Não tem uma conta?{' '}
+              <Button variant="link" asChild className="p-0 h-auto font-medium">
+                <Link to="/primeiro-acesso">Criar conta</Link>
               </Button>
             </p>
           </CardFooter>
