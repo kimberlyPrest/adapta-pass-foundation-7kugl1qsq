@@ -1,30 +1,24 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { HealthStatus } from '@/types/types'
+
+export type HealthStatus = 'Green' | 'Yellow' | 'Red'
 
 interface HealthDotProps {
   status: HealthStatus
-  tooltipText?: string
   className?: string
+  tooltipText?: string
 }
 
-export function HealthDot({ status, tooltipText, className }: HealthDotProps) {
-  const colors = {
-    Green: 'bg-[hsl(142,70%,45%)]',
-    Yellow: 'bg-[hsl(45,90%,50%)]',
-    Red: 'bg-[hsl(0,84%,60%)]',
-  }
-
-  const dot = <div className={cn('h-3 w-3 rounded-full', colors[status], className)} />
-
-  if (!tooltipText) return dot
-
+export function HealthDot({ status, className, tooltipText }: HealthDotProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{dot}</TooltipTrigger>
-      <TooltipContent>
-        <p>{tooltipText}</p>
-      </TooltipContent>
-    </Tooltip>
+    <div
+      className={cn(
+        'h-3 w-3 rounded-full transition-all ease-in-out duration-300',
+        status === 'Green' && 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+        status === 'Yellow' && 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+        status === 'Red' && 'bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.5)]',
+        className,
+      )}
+      title={tooltipText || `Status: ${status}`}
+    />
   )
 }

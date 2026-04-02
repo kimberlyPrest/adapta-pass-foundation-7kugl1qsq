@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { ASAStatus } from '@/types/types'
+
+export type ASAStatus = 'Amplificar' | 'Sistematizar' | 'Automatizar'
 
 interface BadgeASAProps {
   type: ASAStatus
@@ -8,11 +8,17 @@ interface BadgeASAProps {
 }
 
 export function BadgeASA({ type, className }: BadgeASAProps) {
-  const typeClasses = {
-    Amplificar: 'bg-primary text-primary-foreground hover:bg-primary/80',
-    Sistematizar: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent',
-    Automatizar:
-      'bg-[hsl(280,70%,55%)] text-white hover:bg-[hsl(280,70%,55%)]/80 border-transparent',
-  }
-  return <Badge className={cn(typeClasses[type], className)}>{type}</Badge>
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ease-in-out',
+        type === 'Amplificar' && 'border-blue-500 text-blue-700 bg-blue-50',
+        type === 'Sistematizar' && 'border-purple-500 text-purple-700 bg-purple-50',
+        type === 'Automatizar' && 'border-orange-500 text-orange-700 bg-orange-50',
+        className,
+      )}
+    >
+      {type}
+    </div>
+  )
 }

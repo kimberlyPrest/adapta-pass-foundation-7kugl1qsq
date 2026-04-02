@@ -8,9 +8,9 @@ interface SectionTitleProps {
 
 export function SectionTitle({ title, subtitle, className }: SectionTitleProps) {
   return (
-    <div className={cn('space-y-1 mb-6', className)}>
-      <h2 className="text-3xl font-bold font-display tracking-tight">{title}</h2>
-      {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+    <div className={cn('space-y-1.5', className)}>
+      <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
     </div>
   )
 }
