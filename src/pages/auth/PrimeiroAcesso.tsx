@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,19 +10,24 @@ import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicato
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase/client'
+import { PROFILE_ROUTES } from '@/constants/constants'
 
 export default function PrimeiroAcesso() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-
+  const { updatePassword, user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null)
 
-  // Mock email based on token or generic
-  const mockEmail = token
-    ? `novo_usuario_${token.slice(0, 4)}@empresa.com`
-    : 'convidado@empresa.com'
+  // Resolve the session email on mount (magic link sets session before page renders)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionEmail(data.session?.user?.email ?? null)
+    })
+  }, [])
 
   const {
     register,
@@ -33,20 +38,41 @@ export default function PrimeiroAcesso() {
 
   const currentPassword = watch('password')
 
-  useEffect(() => {
-    if (!token) {
-      toast.info('Nenhum token fornecido na URL. Utilizando modo de demonstração.')
-    }
-  }, [token])
-
   const onSubmit = async (data: FirstAccessFormData) => {
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
+    setFormError(null)
 
-    toast.success('Conta criada com sucesso!')
-    navigate('/colaborador')
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const uid = sessionData.session?.user?.id
+
+      if (!uid) throw new Error('Sessão não encontrada. Acesse via link de convite.')
+
+      // Update usuarios row
+      const { error: updateError } = await supabase
+        .from('usuarios')
+        .update({
+          nome: data.nome,
+          senha_definida: true,
+          status: 'ativo',
+        })
+        .eq('id', uid)
+
+      if (updateError) throw new Error('Ocorreu um erro. Tente novamente.')
+
+      // Set the password via Supabase Auth
+      await updatePassword(data.password)
+
+      toast.success('Conta criada com sucesso!')
+
+      const perfil = user?.perfil
+      const route = perfil ? (PROFILE_ROUTES[perfil] ?? '/') : '/'
+      setTimeout(() => navigate(route), 1500)
+    } catch (error: any) {
+      setFormError(error.message ?? 'Ocorreu um erro. Tente novamente.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -62,7 +88,7 @@ export default function PrimeiroAcesso() {
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-2">
               <Label>E-mail (apenas leitura)</Label>
-              <Input value={mockEmail} disabled className="bg-muted/50" />
+              <Input value={sessionEmail ?? '…'} disabled className="bg-muted/50" />
             </div>
 
             <div className="space-y-2">
@@ -102,6 +128,10 @@ export default function PrimeiroAcesso() {
               </div>
               <PasswordStrengthIndicator password={currentPassword} />
             </div>
+
+            {formError && (
+              <p className="text-sm text-destructive text-center animate-fade-in">{formError}</p>
+            )}
 
             <Button
               type="submit"

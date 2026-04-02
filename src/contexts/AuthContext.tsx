@@ -1,72 +1,124 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { AuthContextType, User, UserRole } from '@/types/auth'
-import { toast } from 'sonner'
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { AuthContextType, User } from '@/types/auth'
+import { PROFILE_ROUTES } from '@/constants/constants'
+import { supabase } from '@/lib/supabase/client'
+import * as authService from '@/services/authService'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const ROLE_MAP: Record<string, { role: UserRole; route: string; name: string }> = {
-  'admin@adapta.com': { role: 'ceo_adapta', route: '/ceo', name: 'CEO Adapta' },
-  'head@adapta.com': { role: 'head_consultoria', route: '/head', name: 'Head Consultoria' },
-  'consultor@adapta.com': { role: 'consultor', route: '/consultor', name: 'Consultor' },
-  'cslead@adapta.com': { role: 'cs_lead', route: '/cs-lead', name: 'CS Lead' },
-  'gerente@adapta.com': { role: 'gerente_cs', route: '/cs/pipeline', name: 'Gerente CS' },
-  'gestor@empresa.com': { role: 'gestor_cliente', route: '/gestor', name: 'Gestor' },
-  'colaborador@empresa.com': { role: 'colaborador', route: '/colaborador', name: 'Colaborador' },
+// ─── Fetch user row from usuarios table ──────────────────────────────────────
+
+async function fetchUsuario(uid: string): Promise<User | null> {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, email, nome, perfil, avatar_url, empresa_id')
+    .eq('id', uid)
+    .single()
+
+  if (error || !data) return null
+  return data as User
 }
 
-const simulateDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+// ─── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('auth_user')
-    return saved ? JSON.parse(saved) : null
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
+  const location = useLocation()
+  // Track if we already redirected after SIGNED_IN to avoid double navigation
+  const didRedirect = useRef(false)
 
-  const login = useCallback(async (email: string, password?: string) => {
-    setIsLoading(true)
-    try {
-      await simulateDelay(1500)
+  // ── On mount: restore session ──────────────────────────────────────────────
+  useEffect(() => {
+    let mounted = true
 
-      if (email.toLowerCase().includes('erro')) {
-        throw new Error('E-mail ou senha incorretos')
+    authService.getSession().then(async (session) => {
+      if (!mounted) return
+      if (session?.user) {
+        const u = await fetchUsuario(session.user.id)
+        if (mounted) setUser(u)
       }
+      if (mounted) setIsLoading(false)
+    }).catch(() => {
+      if (mounted) setIsLoading(false)
+    })
 
-      const mapped = ROLE_MAP[email.toLowerCase()] || {
-        role: 'colaborador',
-        route: '/colaborador',
-        name: email.split('@')[0],
-      }
-
-      const newUser: User = {
-        email,
-        nome: mapped.name,
-        perfil: mapped.role,
-        avatar_url: `https://img.usecurling.com/ppl/thumbnail?seed=${email}`,
-      }
-
-      setUser(newUser)
-      localStorage.setItem('auth_user', JSON.stringify(newUser))
-
-      toast.success('Login realizado com sucesso!')
-      return mapped.route
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao realizar login')
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
+    return () => { mounted = false }
   }, [])
 
-  const logout = useCallback(() => {
-    setUser(null)
-    localStorage.removeItem('auth_user')
+  // ── Auth state change listener ─────────────────────────────────────────────
+  useEffect(() => {
+    const subscription = authService.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const u = await fetchUsuario(session.user.id)
+        setUser(u)
+        setIsLoading(false)
+
+        if (!didRedirect.current) {
+          didRedirect.current = true
+          const searchParams = new URLSearchParams(location.search)
+          const redirectTo = searchParams.get('redirect')
+          const defaultRoute = u ? (PROFILE_ROUTES[u.perfil] ?? '/') : '/'
+          navigate(redirectTo ?? defaultRoute, { replace: true })
+        }
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setIsLoading(false)
+        didRedirect.current = false
+      }
+
+      if (event === 'PASSWORD_RECOVERY') {
+        // handled by ResetPassword page
+      }
+    })
+
+    return () => { subscription.unsubscribe() }
+  }, [navigate, location.search])
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  const login = useCallback(async (email: string, password: string) => {
+    didRedirect.current = false
+    await authService.signInWithEmail(email, password)
+    // navigation happens in onAuthStateChange SIGNED_IN handler
   }, [])
 
-  return React.createElement(
-    AuthContext.Provider,
-    { value: { user, isAuthenticated: !!user, isLoading, login, logout } },
-    children,
+  const loginWithMagicLink = useCallback(async (email: string) => {
+    await authService.signInWithMagicLink(email)
+  }, [])
+
+  const logout = useCallback(async () => {
+    await authService.signOut()
+    navigate('/login', { replace: true })
+  }, [navigate])
+
+  const resetPassword = useCallback(async (email: string) => {
+    await authService.resetPassword(email)
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    await authService.updatePassword(password)
+  }, [])
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        loginWithMagicLink,
+        logout,
+        resetPassword,
+        updatePassword,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   )
 }
 

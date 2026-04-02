@@ -10,11 +10,14 @@ import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicato
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const { updatePassword } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const {
     register,
@@ -27,14 +30,18 @@ export default function ResetPassword() {
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsLoading(false)
-
-    toast.success('Senha redefinida com sucesso!')
-    setTimeout(() => {
-      navigate('/login')
-    }, 2000)
+    setFormError(null)
+    try {
+      await updatePassword(data.password)
+      toast.success('Senha redefinida com sucesso!')
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+    } catch (error: any) {
+      setFormError(error.message ?? 'Ocorreu um erro. Tente novamente.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -87,6 +94,10 @@ export default function ResetPassword() {
                 </p>
               )}
             </div>
+
+            {formError && (
+              <p className="text-sm text-destructive text-center animate-fade-in">{formError}</p>
+            )}
 
             <Button type="submit" className="w-full font-medium" disabled={!isValid || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

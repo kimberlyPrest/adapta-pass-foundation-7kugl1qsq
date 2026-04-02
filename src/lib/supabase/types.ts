@@ -9,13 +9,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      usuarios: {
+        Row: {
+          area_id: string | null
+          ativo: boolean
+          avatar_url: string | null
+          created_at: string
+          email: string
+          empresa_id: string | null
+          gestor_direto_id: string | null
+          id: string
+          nome: string
+          perfil: string
+          senha_definida: boolean
+          status: string
+          subtime_declarado: boolean
+          tem_subtime: boolean
+          updated_at: string
+        }
+        Insert: {
+          area_id?: string | null
+          ativo?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          empresa_id?: string | null
+          gestor_direto_id?: string | null
+          id: string
+          nome: string
+          perfil: string
+          senha_definida?: boolean
+          status?: string
+          subtime_declarado?: boolean
+          tem_subtime?: boolean
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string | null
+          ativo?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          empresa_id?: string | null
+          gestor_direto_id?: string | null
+          id?: string
+          nome?: string
+          perfil?: string
+          senha_definida?: boolean
+          status?: string
+          subtime_declarado?: boolean
+          tem_subtime?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_gestor_direto_id_fkey"
+            columns: ["gestor_direto_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_empresa: { Args: { user_id: string }; Returns: string }
+      get_user_perfil: { Args: { user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
