@@ -23,15 +23,17 @@ import {
 } from '@/components/ui/form'
 import { toast } from 'sonner'
 import logoImg from '@/assets/adapta-pass-logo-white-5b4d9-crdoq5rj-cd8ab.png'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { login, loginWithMagicLink } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isMagicLinkMode, setIsMagicLinkMode] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     const root = document.documentElement
-    // Default to dark mode if not set so the white logo is visible
     if (!root.classList.contains('light') && !root.classList.contains('dark')) {
       root.classList.add('dark')
     }
@@ -58,32 +60,27 @@ export default function Login() {
 
   useEffect(() => {
     form.clearErrors('password')
+    setFormError(null)
   }, [isMagicLinkMode, form])
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
+    setFormError(null)
 
-    if (isMagicLinkMode) {
-      setTimeout(() => {
-        setIsLoading(false)
+    try {
+      if (isMagicLinkMode) {
+        await loginWithMagicLink(data.email)
         navigate('/magic-link-confirm')
-      }, 1000)
-      return
-    }
-
-    setTimeout(() => {
-      setIsLoading(false)
-      if (data.email && data.password) {
-        if (data.email === 'erro@teste.com') {
-          toast.error('E-mail ou senha incorretos')
-          return
-        }
-        localStorage.setItem('isAuthenticated', 'true')
-        navigate('/dev-preview')
-      } else {
-        toast.error('E-mail ou senha incorretos')
+        return
       }
-    }, 1000)
+
+      await login(data.email, data.password ?? '')
+      // Redirect is handled by onAuthStateChange in AuthContext
+    } catch (error: any) {
+      setFormError(error.message ?? 'Ocorreu um erro. Tente novamente.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -148,6 +145,13 @@ export default function Login() {
                     )}
                   />
                 )}
+
+                {formError && (
+                  <p className="text-sm text-destructive text-center animate-fade-in">
+                    {formError}
+                  </p>
+                )}
+
                 <Button type="submit" className="w-full mt-6" disabled={isLoading}>
                   {isLoading
                     ? isMagicLinkMode
