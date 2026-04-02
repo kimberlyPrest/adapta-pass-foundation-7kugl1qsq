@@ -63,11 +63,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "usuarios_gestor_direto_id_fkey"
-            columns: ["gestor_direto_id"]
+            foreignKeyName: 'usuarios_gestor_direto_id_fkey'
+            columns: ['gestor_direto_id']
             isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
           },
         ]
       }

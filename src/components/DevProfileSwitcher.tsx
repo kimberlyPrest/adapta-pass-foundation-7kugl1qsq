@@ -32,10 +32,7 @@ function DevProfileSwitcherInner({ mobileMode }: { mobileMode?: boolean }) {
     setIsUpdating(true)
 
     try {
-      await supabase
-        .from('usuarios')
-        .update({ perfil: newPerfil })
-        .eq('id', user.id)
+      await supabase.from('usuarios').update({ perfil: newPerfil }).eq('id', user.id)
 
       // Navigate to new role's default route; AuthContext listener will refresh user
       const route = PROFILE_ROUTES[newPerfil] ?? '/'
@@ -46,13 +43,13 @@ function DevProfileSwitcherInner({ mobileMode }: { mobileMode?: boolean }) {
   }
 
   return (
-    <div className={mobileMode ? "flex flex-col gap-2 w-full" : "hidden md:flex items-center gap-2"}>
-      {!mobileMode && <span className="text-xs text-muted-foreground whitespace-nowrap">Visão:</span>}
-      <Select
-        value={user?.perfil ?? ''}
-        onValueChange={handleChange}
-        disabled={isUpdating}
-      >
+    <div
+      className={mobileMode ? 'flex flex-col gap-2 w-full' : 'hidden md:flex items-center gap-2'}
+    >
+      {!mobileMode && (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">Visão:</span>
+      )}
+      <Select value={user?.perfil ?? ''} onValueChange={handleChange} disabled={isUpdating}>
         <SelectTrigger
           className="h-8 w-40 text-xs border-border bg-card"
           aria-label="Alternar perfil de desenvolvimento"

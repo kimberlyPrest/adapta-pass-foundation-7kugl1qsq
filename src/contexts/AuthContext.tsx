@@ -34,18 +34,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    authService.getSession().then(async (session) => {
-      if (!mounted) return
-      if (session?.user) {
-        const u = await fetchUsuario(session.user.id)
-        if (mounted) setUser(u)
-      }
-      if (mounted) setIsLoading(false)
-    }).catch(() => {
-      if (mounted) setIsLoading(false)
-    })
+    authService
+      .getSession()
+      .then(async (session) => {
+        if (!mounted) return
+        if (session?.user) {
+          const u = await fetchUsuario(session.user.id)
+          if (mounted) setUser(u)
+        }
+        if (mounted) setIsLoading(false)
+      })
+      .catch(() => {
+        if (mounted) setIsLoading(false)
+      })
 
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // ── Auth state change listener ─────────────────────────────────────────────
@@ -76,7 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return () => { subscription.unsubscribe() }
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [navigate, location.search])
 
   // ── Actions ────────────────────────────────────────────────────────────────
