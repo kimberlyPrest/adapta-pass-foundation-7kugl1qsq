@@ -1,155 +1,113 @@
-import { Suspense, useMemo } from 'react'
-import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { LoadingScreen } from './LoadingScreen'
-import { ErrorBoundary } from './ErrorBoundary'
-import { cn } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthContext'
-import { LogOut } from 'lucide-react'
+import { Moon, Sun, LogOut, Menu } from 'lucide-react'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import logoImg from '@/assets/adapta-pass-logo-white-5b4d9-crdoq5rj-cd8ab.png'
 
 export default function Layout() {
-  const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const location = useLocation()
+  const [isDark, setIsDark] = useState(true)
 
-  const navLinks = useMemo(() => {
-    const path = location.pathname
-    if (path.startsWith('/consultor')) {
-      return [
-        { label: 'Visão Geral', to: '/consultor' },
-        { label: 'Clientes', to: '/consultor/clientes' },
-      ]
+  useEffect(() => {
+    const root = document.documentElement
+    // Default to dark mode if not set so the white logo is visible
+    if (!root.classList.contains('light') && !root.classList.contains('dark')) {
+      root.classList.add('dark')
     }
-    if (path.startsWith('/gestor')) {
-      return [
-        { label: 'Visão Geral', to: '/gestor' },
-        { label: 'Áreas', to: '/gestor/areas' },
-        { label: 'DMO', to: '/gestor/dmo' },
-        { label: 'Tarefas', to: '/gestor/tarefas' },
-        { label: 'Overdelivery', to: '/gestor/overdelivery' },
-      ]
-    }
-    if (path.startsWith('/colaborador')) {
-      return [
-        { label: 'Dashboard', to: '/colaborador' },
-        { label: 'Processos', to: '/colaborador/processos' },
-      ]
-    }
-    if (path.startsWith('/cs') && !path.startsWith('/cs-lead')) {
-      return [{ label: 'Pipeline', to: '/cs/pipeline' }]
-    }
-    if (path.startsWith('/head')) {
-      return [{ label: 'Visão Geral', to: '/head' }]
-    }
-    if (path.startsWith('/ceo')) {
-      return [{ label: 'Visão Geral', to: '/ceo' }]
-    }
-    return [{ label: 'Dev Preview', to: '/dev-preview' }]
-  }, [location.pathname])
+    setIsDark(root.classList.contains('dark'))
+  }, [])
 
-  const isAuthPage = [
-    '/login',
-    '/magic-link-confirm',
-    '/reset-password',
-    '/primeiro-acesso',
-  ].includes(location.pathname)
+  const toggleTheme = () => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.remove('dark')
+      root.classList.add('light')
+    } else {
+      root.classList.remove('light')
+      root.classList.add('dark')
+    }
+    setIsDark(!isDark)
+  }
 
   const handleLogout = () => {
-    logout()
+    localStorage.removeItem('isAuthenticated')
     navigate('/login')
   }
 
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+  const isAuthPage = location.pathname.startsWith('/login')
+
   if (isAuthPage) {
-    return (
-      <ErrorBoundary>
-        <Suspense fallback={<LoadingScreen />}>
-          <main className="flex min-h-screen bg-background text-foreground animate-fade-in">
-            <Outlet />
-          </main>
-        </Suspense>
-      </ErrorBoundary>
-    )
+    return <Outlet />
   }
 
-  // Get user initials for fallback
-  const initials =
-    user?.nome
-      ?.split(' ')
-      .map((n) => n[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase() || 'U'
-
   return (
-    <ErrorBoundary>
-      <div className="flex flex-col min-h-screen bg-background text-foreground">
-        <header className="sticky top-0 z-50 h-16 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border/40">
-          <div className="flex h-full items-center justify-between px-6">
-            <Link
-              to={user ? `/${user.perfil.split('_')[0]}` : '/'}
-              className="flex items-center gap-1 font-display text-2xl font-bold transition-transform hover:scale-[1.02]"
-            >
-              <span className="text-secondary">ADAPTA</span>
-              <span className="text-destructive">PASS</span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              {user && (
-                <div className="hidden md:flex flex-col items-end mr-2">
-                  <span className="text-sm font-medium leading-none">{user.nome}</span>
-                  <span className="text-xs text-muted-foreground mt-1 capitalize">
-                    {user.perfil.replace('_', ' ')}
-                  </span>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[240px] sm:w-[300px]">
+                <div className="flex flex-col gap-6 py-4">
+                  <Link to="/" className="flex items-center gap-2">
+                    <img src={logoImg} alt="ADAPTA PASS" className="h-6 w-auto object-contain" />
+                  </Link>
+                  <nav className="flex flex-col gap-2">
+                    <Link
+                      to="/"
+                      className="text-sm font-medium hover:text-primary transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                  </nav>
                 </div>
-              )}
-              <Avatar className="h-9 w-9 border border-border">
-                <AvatarImage src={user?.avatar_url} alt={user?.nome} />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive transition-colors ml-1"
-                onClick={handleLogout}
-                title="Sair"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+              </SheetContent>
+            </Sheet>
+
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src={logoImg}
+                alt="ADAPTA PASS"
+                className="h-6 w-auto hidden md:block object-contain"
+              />
+              <img
+                src={logoImg}
+                alt="ADAPTA PASS"
+                className="h-5 w-auto md:hidden object-contain"
+              />
+            </Link>
           </div>
-        </header>
 
-        <div className="border-b border-border/40 bg-muted/10 overflow-x-auto scrollbar-hide">
-          <nav className="flex items-center px-6 h-12 gap-6 min-w-max">
-            {navLinks.map((link) => {
-              const isExact = location.pathname === link.to
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={cn(
-                    'text-sm font-medium transition-colors duration-200 h-full flex items-center border-b-2',
-                    isExact
-                      ? 'border-primary text-foreground'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30',
-                  )}
-                >
-                  {link.label}
-                </Link>
-              )
-            })}
-          </nav>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+
+            {isAuthenticated ? (
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            ) : (
+              <Button variant="default" size="sm" onClick={() => navigate('/login')}>
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
+      </header>
 
-        <main className="flex-1 w-full max-w-7xl mx-auto p-6 animate-fade-in">
-          <Suspense fallback={<LoadingScreen />}>
-            <Outlet />
-          </Suspense>
-        </main>
-      </div>
-    </ErrorBoundary>
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <Outlet />
+      </main>
+    </div>
   )
 }
